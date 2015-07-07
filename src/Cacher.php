@@ -48,13 +48,13 @@ class Cacher
                 continue;
             }
 
-            $code .= static::getCacheCode($class);
+            $code .= $this->getCacheCode($class);
         }
 
         return $code;
     }
 
-    protected static function getCacheCode(ClassReflection $classReflection)
+    protected function getCacheCode(ClassReflection $classReflection)
     {
         $useString = '';
         $usesNames = array();
