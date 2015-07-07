@@ -1,10 +1,8 @@
 <?php
 
-use Cacher\Cacher;
+require_once '../../vendor/autoload.php';
 
-require_once '../vendor/autoload.php';
-
-$cacher = new Cacher();
+$cacher = new Cacher\Cacher();
 
 $classes = get_declared_classes();
 
