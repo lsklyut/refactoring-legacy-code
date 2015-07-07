@@ -56,41 +56,9 @@ class Cacher
 
     protected function getCacheCode(ClassReflection $classReflection)
     {
-        $useString = '';
-        $usesNames = array();
-        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
-            foreach ($uses as $use) {
-                $usesNames[$use['use']] = $use['as'];
+        list($useString, $usesNames) = $this->getUseStringAndNames($classReflection);
 
-                $useString .= "use {$use['use']}";
-
-                if ($use['as']) {
-                    $useString .= " as {$use['as']}";
-                }
-
-                $useString .= ";\n";
-            }
-        }
-
-        $declaration = '';
-
-        if ($classReflection->isAbstract() && !$classReflection->isInterface()) {
-            $declaration .= 'abstract ';
-        }
-
-        if ($classReflection->isFinal()) {
-            $declaration .= 'final ';
-        }
-
-        if ($classReflection->isInterface()) {
-            $declaration .= 'interface ';
-        }
-
-        if (!$classReflection->isInterface()) {
-            $declaration .= 'class ';
-        }
-
-        $declaration .= $classReflection->getShortName();
+        $declaration = $this->extractDeclaration($classReflection);
 
         $parentClassName = false;
         if (($parent = $classReflection->getParentClass()) && $classReflection->getNamespaceName()) {
@@ -137,5 +105,54 @@ class Cacher
             . "\n}\n";
 
         return $return;
+    }
+
+    private function getUseStringAndNames(ClassReflection $classReflection)
+    {
+        $useString = '';
+        $usesNames = array();
+        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
+            foreach ($uses as $use) {
+                $usesNames[$use['use']] = $use['as'];
+
+                $useString .= "use {$use['use']}";
+
+                if ($use['as']) {
+                    $useString .= " as {$use['as']}";
+                }
+
+                $useString .= ";\n";
+            }
+        }
+
+        return array($useString, $usesNames);
+    }
+
+    /**
+     * @param ClassReflection $classReflection
+     * @return string
+     */
+    protected function extractDeclaration(ClassReflection $classReflection)
+    {
+        $declaration = '';
+
+        if ($classReflection->isAbstract() && !$classReflection->isInterface()) {
+            $declaration .= 'abstract ';
+        }
+
+        if ($classReflection->isFinal()) {
+            $declaration .= 'final ';
+        }
+
+        if ($classReflection->isInterface()) {
+            $declaration .= 'interface ';
+        }
+
+        if (!$classReflection->isInterface()) {
+            $declaration .= 'class ';
+        }
+
+        $declaration .= $classReflection->getShortName();
+        return $declaration;
     }
 }
