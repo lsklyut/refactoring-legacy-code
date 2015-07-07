@@ -5,6 +5,7 @@ namespace CacherTest;
 use Cacher\Cacher;
 use Zend\EventManager\Filter\FilterIterator;
 use Zend\Stdlib\ArrayObject;
+use Zend\Stdlib\Hydrator\NamingStrategy\ArrayMapNamingStrategy;
 use Zend\Stdlib\Message;
 
 class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
@@ -30,7 +31,9 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $filetIterator = new FilterIterator();
 
-        $classes = get_declared_classes();
+        $namingStrategy = new ArrayMapNamingStrategy([]);
+
+        $classes = array_merge(get_declared_interfaces(), get_declared_classes());
 
         $actual = $this->sut->cache($classes);
 
@@ -44,7 +47,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
      */
     public function testNoClassesReturnsEmptyFile()
     {
-        $classes = get_declared_classes();
+        $classes = array_merge(get_declared_interfaces(), get_declared_classes());
 
         $actual = $this->sut->cache($classes);
 
@@ -60,7 +63,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
     {
         $message = new \Zend\Stdlib\Message();
 
-        $classes = get_declared_classes();
+        $classes = array_merge(get_declared_interfaces(), get_declared_classes());
 
         $actual = $this->sut->cache($classes);
 
@@ -82,7 +85,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
     public function testSkipsSameClassOnSecondPass()
     {
-        $classes = array('Zend\Stdlib\Message', 'Zend\Stdlib\Message');
+        $classes = array('Zend\Stdlib\MessageInterface', 'Zend\Stdlib\Message', 'Zend\Stdlib\Message');
 
         $actual = $this->sut->cache($classes);
 
