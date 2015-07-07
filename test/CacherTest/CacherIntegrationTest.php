@@ -74,6 +74,6 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
      */
     public function getTestFileContents($testFile)
     {
-        return file_get_contents('test/data/' . $testFile . '_original.txt');
+        return file_get_contents(__DIR__ . '/../data/' . $testFile . '_original.txt');
     }
 }
