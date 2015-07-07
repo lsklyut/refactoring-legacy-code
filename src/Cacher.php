@@ -1,5 +1,7 @@
 <?php
 
+namespace Cacher;
+
 use Zend\Code\Reflection\ClassReflection;
 
 class Cacher
