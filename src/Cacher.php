@@ -97,12 +97,6 @@ class Cacher
         $declaration .= $r->getShortName();
 
         $tmp = false;
-        $parent = $r->getParentClass();
-        if (!$r->getNamespaceName()) {
-            $tmp = '\\' . $parent->getName();
-        }
-
-        $tmp = false;
         if (($parent = $r->getParentClass()) && $r->getNamespaceName()) {
             $tmp   = array_key_exists($parent->getName(), $usesNames)
                 ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
