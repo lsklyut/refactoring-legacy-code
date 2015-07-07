@@ -152,11 +152,11 @@ class Cacher
                 : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
                     ? substr($parent->getName(), strlen($classReflection->getNamespaceName()) + 1)
                     : '\\' . $parent->getName());
-            return $parentClassName;
         } else if ($parent && !$classReflection->getNamespaceName()) {
             $parentClassName = '\\' . $parent->getName();
-            return $parentClassName;
-        }return $parentClassName;
+        }
+
+        return $parentClassName;
     }
 
     /**
