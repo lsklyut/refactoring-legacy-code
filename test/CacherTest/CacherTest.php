@@ -69,6 +69,28 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $actual);
     }
 
+    public function testSkipsZendAutoloaders()
+    {
+        $classes = array('Zend\Loader\AutoloaderFactory', 'Zend\Loader\SplAutoloader');
+
+        $actual = $this->sut->cache($classes);
+
+        $expected = $this->getTestFileContents('testNoClassesReturnsEmptyFile');
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testSkipsSameClassOnSecondPass()
+    {
+        $classes = array('Zend\Stdlib\Message', 'Zend\Stdlib\Message');
+
+        $actual = $this->sut->cache($classes);
+
+        $expected = $this->getTestFileContents('testOneClass');
+
+        $this->assertEquals($expected, $actual);
+    }
+
     /**
      * @return string
      */
