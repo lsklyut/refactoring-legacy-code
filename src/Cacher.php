@@ -167,7 +167,8 @@ class Cacher
      */
     protected function extractInterfaceStatement(ClassReflection $classReflection, $parent, $usesNames)
     {
-        $interfaceNames = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
+        $parentInterfaceNames = $parent instanceof ClassReflection ? $parent->getInterfaceNames() : array();
+        $interfaceNames = array_diff($classReflection->getInterfaceNames(), $parentInterfaceNames);
         $interfaceStatement = '';
 
         if (!count($interfaceNames)) {
