@@ -8,9 +8,14 @@ $cacher = new Cacher();
 
 $classes = get_declared_classes();
 
-$result = $cacher->cache($classes);
+$actual = $cacher->cache($classes);
 
-$file = fopen('data/testNoClassesReturnsEmptyFile_original.txt', 'w');
+$expected = file_get_contents('data/testNoClassesReturnsEmptyFile_original.txt');
 
-fwrite($file, $result);
-fclose($file);
+print PHP_EOL;
+
+if ($actual === $expected) {
+    print "OK";
+} else print "FAIL";
+
+print PHP_EOL;

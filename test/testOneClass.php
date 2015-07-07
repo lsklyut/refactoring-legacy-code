@@ -10,9 +10,14 @@ $message = new \Zend\Stdlib\Message();
 
 $classes = get_declared_classes();
 
-$result = $cacher->cache($classes);
+$actual = $cacher->cache($classes);
 
-$file = fopen('data/testOneClass_original.txt', 'w');
+$expected = file_get_contents('data/testOneClass_original.txt');
 
-fwrite($file, $result);
-fclose($file);
+print PHP_EOL;
+
+if ($actual === $expected) {
+    print "OK";
+} else print "FAIL";
+
+print PHP_EOL;
