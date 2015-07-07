@@ -92,19 +92,19 @@ class Cacher
 
         $declaration .= $classReflection->getShortName();
 
-        $tmp = false;
+        $parentClassName = false;
         if (($parent = $classReflection->getParentClass()) && $classReflection->getNamespaceName()) {
-            $tmp   = array_key_exists($parent->getName(), $usesNames)
+            $parentClassName   = array_key_exists($parent->getName(), $usesNames)
                 ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
                 : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
                     ? substr($parent->getName(), strlen($classReflection->getNamespaceName()) + 1)
                     : '\\' . $parent->getName());
         } else if ($parent && !$classReflection->getNamespaceName()) {
-            $tmp = '\\' . $parent->getName();
+            $parentClassName = '\\' . $parent->getName();
         }
 
-        if ($tmp) {
-            $declaration .= " extends {$tmp}";
+        if ($parentClassName) {
+            $declaration .= " extends {$parentClassName}";
         }
 
         $int = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
