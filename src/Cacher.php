@@ -54,11 +54,11 @@ class Cacher
         return $code;
     }
 
-    protected static function getCacheCode(ClassReflection $r)
+    protected static function getCacheCode(ClassReflection $classReflection)
     {
         $useString = '';
         $usesNames = array();
-        if (count($uses = $r->getDeclaringFile()->getUses())) {
+        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
             foreach ($uses as $use) {
                 $usesNames[$use['use']] = $use['as'];
 
@@ -74,32 +74,32 @@ class Cacher
 
         $declaration = '';
 
-        if ($r->isAbstract() && !$r->isInterface()) {
+        if ($classReflection->isAbstract() && !$classReflection->isInterface()) {
             $declaration .= 'abstract ';
         }
 
-        if ($r->isFinal()) {
+        if ($classReflection->isFinal()) {
             $declaration .= 'final ';
         }
 
-        if ($r->isInterface()) {
+        if ($classReflection->isInterface()) {
             $declaration .= 'interface ';
         }
 
-        if (!$r->isInterface()) {
+        if (!$classReflection->isInterface()) {
             $declaration .= 'class ';
         }
 
-        $declaration .= $r->getShortName();
+        $declaration .= $classReflection->getShortName();
 
         $tmp = false;
-        if (($parent = $r->getParentClass()) && $r->getNamespaceName()) {
+        if (($parent = $classReflection->getParentClass()) && $classReflection->getNamespaceName()) {
             $tmp   = array_key_exists($parent->getName(), $usesNames)
                 ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
-                : ((0 === strpos($parent->getName(), $r->getNamespaceName()))
-                    ? substr($parent->getName(), strlen($r->getNamespaceName()) + 1)
+                : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
+                    ? substr($parent->getName(), strlen($classReflection->getNamespaceName()) + 1)
                     : '\\' . $parent->getName());
-        } else if ($parent && !$r->getNamespaceName()) {
+        } else if ($parent && !$classReflection->getNamespaceName()) {
             $tmp = '\\' . $parent->getName();
         }
 
@@ -107,29 +107,29 @@ class Cacher
             $declaration .= " extends {$tmp}";
         }
 
-        $int = array_diff($r->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
+        $int = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
         if (count($int)) {
             foreach ($int as $interface) {
                 $iReflection = new ClassReflection($interface);
                 $int  = array_diff($int, $iReflection->getInterfaceNames());
             }
-            $declaration .= $r->isInterface() ? ' extends ' : ' implements ';
-            $declaration .= implode(', ', array_map(function($interface) use ($usesNames, $r) {
+            $declaration .= $classReflection->isInterface() ? ' extends ' : ' implements ';
+            $declaration .= implode(', ', array_map(function($interface) use ($usesNames, $classReflection) {
                 $iReflection = new ClassReflection($interface);
                 return (array_key_exists($iReflection->getName(), $usesNames)
                     ? ($usesNames[$iReflection->getName()] ?: $iReflection->getShortName())
-                    : ((0 === strpos($iReflection->getName(), $r->getNamespaceName()))
-                        ? substr($iReflection->getName(), strlen($r->getNamespaceName()) + 1)
+                    : ((0 === strpos($iReflection->getName(), $classReflection->getNamespaceName()))
+                        ? substr($iReflection->getName(), strlen($classReflection->getNamespaceName()) + 1)
                         : '\\' . $iReflection->getName()));
             }, $int));
         }
 
-        $contents = $r->getContents(false);
-        $dir  = dirname($r->getFileName());
+        $contents = $classReflection->getContents(false);
+        $dir  = dirname($classReflection->getFileName());
         $contents = trim(str_replace('__DIR__', sprintf("'%s'", $dir), $contents));
 
         $return = "\nnamespace "
-            . $r->getNamespaceName()
+            . $classReflection->getNamespaceName()
             . " {\n"
             . $useString
             . $declaration . "\n"
