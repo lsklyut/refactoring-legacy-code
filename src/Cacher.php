@@ -68,22 +68,9 @@ class Cacher
             $declaration .= " extends {$parentClassName}";
         }
 
-        $interfaceNames = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
-        if (count($interfaceNames)) {
-            foreach ($interfaceNames as $interface) {
-                $iReflection = new ClassReflection($interface);
-                $interfaceNames  = array_diff($interfaceNames, $iReflection->getInterfaceNames());
-            }
-            $declaration .= $classReflection->isInterface() ? ' extends ' : ' implements ';
-            $declaration .= implode(', ', array_map(function($interface) use ($usesNames, $classReflection) {
-                $iReflection = new ClassReflection($interface);
-                return (array_key_exists($iReflection->getName(), $usesNames)
-                    ? ($usesNames[$iReflection->getName()] ?: $iReflection->getShortName())
-                    : ((0 === strpos($iReflection->getName(), $classReflection->getNamespaceName()))
-                        ? substr($iReflection->getName(), strlen($classReflection->getNamespaceName()) + 1)
-                        : '\\' . $iReflection->getName()));
-            }, $interfaceNames));
-        }
+        $interfaceStatement = $this->extractInterfaceStatement($classReflection, $parent, $usesNames);
+
+        $declaration .= $interfaceStatement;
 
         $contents = $classReflection->getContents(false);
         $dir  = dirname($classReflection->getFileName());
@@ -170,5 +157,34 @@ class Cacher
             $parentClassName = '\\' . $parent->getName();
             return $parentClassName;
         }return $parentClassName;
+    }
+
+    /**
+     * @param ClassReflection $classReflection
+     * @param $parent
+     * @param $usesNames
+     * @return string
+     */
+    protected function extractInterfaceStatement(ClassReflection $classReflection, $parent, $usesNames)
+    {
+        $interfaceNames = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
+        $interfaceStatement = '';
+        if (count($interfaceNames)) {
+            foreach ($interfaceNames as $interface) {
+                $iReflection = new ClassReflection($interface);
+                $interfaceNames = array_diff($interfaceNames, $iReflection->getInterfaceNames());
+            }
+            $interfaceStatement .= $classReflection->isInterface() ? ' extends ' : ' implements ';
+            $interfaceStatement .= implode(', ', array_map(function ($interface) use ($usesNames, $classReflection) {
+                $iReflection = new ClassReflection($interface);
+                return (array_key_exists($iReflection->getName(), $usesNames)
+                    ? ($usesNames[$iReflection->getName()] ?: $iReflection->getShortName())
+                    : ((0 === strpos($iReflection->getName(), $classReflection->getNamespaceName()))
+                        ? substr($iReflection->getName(), strlen($classReflection->getNamespaceName()) + 1)
+                        : '\\' . $iReflection->getName()));
+            }, $interfaceNames));
+            return $interfaceStatement;
+        }
+        return $interfaceStatement;
     }
 }
