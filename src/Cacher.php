@@ -107,11 +107,11 @@ class Cacher
             $declaration .= " extends {$parentClassName}";
         }
 
-        $int = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
-        if (count($int)) {
-            foreach ($int as $interface) {
+        $interfaceNames = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
+        if (count($interfaceNames)) {
+            foreach ($interfaceNames as $interface) {
                 $iReflection = new ClassReflection($interface);
-                $int  = array_diff($int, $iReflection->getInterfaceNames());
+                $interfaceNames  = array_diff($interfaceNames, $iReflection->getInterfaceNames());
             }
             $declaration .= $classReflection->isInterface() ? ' extends ' : ' implements ';
             $declaration .= implode(', ', array_map(function($interface) use ($usesNames, $classReflection) {
@@ -121,7 +121,7 @@ class Cacher
                     : ((0 === strpos($iReflection->getName(), $classReflection->getNamespaceName()))
                         ? substr($iReflection->getName(), strlen($classReflection->getNamespaceName()) + 1)
                         : '\\' . $iReflection->getName()));
-            }, $int));
+            }, $interfaceNames));
         }
 
         $contents = $classReflection->getContents(false);
