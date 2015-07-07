@@ -60,16 +60,9 @@ class Cacher
 
         $declaration = $this->extractDeclaration($classReflection);
 
-        $parentClassName = false;
-        if (($parent = $classReflection->getParentClass()) && $classReflection->getNamespaceName()) {
-            $parentClassName   = array_key_exists($parent->getName(), $usesNames)
-                ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
-                : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
-                    ? substr($parent->getName(), strlen($classReflection->getNamespaceName()) + 1)
-                    : '\\' . $parent->getName());
-        } else if ($parent && !$classReflection->getNamespaceName()) {
-            $parentClassName = '\\' . $parent->getName();
-        }
+        $parent = $classReflection->getParentClass();
+
+        $parentClassName = $this->extractParentClassName($classReflection, $parent, $usesNames);
 
         if ($parentClassName) {
             $declaration .= " extends {$parentClassName}";
@@ -154,5 +147,28 @@ class Cacher
 
         $declaration .= $classReflection->getShortName();
         return $declaration;
+    }
+
+    /**
+     * @param ClassReflection $classReflection
+     * @param $parent
+     * @param $usesNames
+     * @return bool|string
+     */
+    protected function extractParentClassName(ClassReflection $classReflection, $parent, $usesNames)
+    {
+        $parentClassName = false;
+
+        if ($parent && $classReflection->getNamespaceName()) {
+            $parentClassName = array_key_exists($parent->getName(), $usesNames)
+                ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
+                : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
+                    ? substr($parent->getName(), strlen($classReflection->getNamespaceName()) + 1)
+                    : '\\' . $parent->getName());
+            return $parentClassName;
+        } else if ($parent && !$classReflection->getNamespaceName()) {
+            $parentClassName = '\\' . $parent->getName();
+            return $parentClassName;
+        }return $parentClassName;
     }
 }
