@@ -6,7 +6,7 @@ use Zend\Code\Reflection\ClassReflection;
 
 class Cacher
 {
-    protected $classes = array();
+    protected $loadedClasses = array();
 
     public function cache($classes)
     {
@@ -28,10 +28,10 @@ class Cacher
             }
 
             // Skip any classes we already know about
-            if (in_array($class, $this->classes)) {
+            if (in_array($class, $this->loadedClasses)) {
                 continue;
             }
-            $this->classes[] = $class;
+            $this->loadedClasses[] = $class;
 
             $class = new ClassReflection($class);
 
