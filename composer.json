@@ -1,0 +1,8 @@
+{
+    "name": "lsklyut/cacher",
+    "description": "Legacy Code example project for demonstration",
+    "type": "library",
+    "require": {
+        "zendframework/zend-code": "2.*"
+    }
+}
