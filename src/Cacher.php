@@ -8,47 +8,47 @@ class Cacher
 {
     protected $classes = array();
 
-    public function cache($c)
+    public function cache($classes)
     {
         $code = "<?php\n";
 
-        foreach ($c as $ct) {
+        foreach ($classes as $class) {
             // Skip non-Zend classes
-            if (0 !== strpos($ct, 'Zend')) {
+            if (0 !== strpos($class, 'Zend')) {
                 continue;
             }
 
             // Skip the autoloader factory and this class
-            if (in_array($ct, array('Zend\Loader\AutoloaderFactory', __CLASS__))) {
+            if (in_array($class, array('Zend\Loader\AutoloaderFactory', __CLASS__))) {
                 continue;
             }
 
-            if ($ct === 'Zend\Loader\SplAutoloader') {
+            if ($class === 'Zend\Loader\SplAutoloader') {
                 continue;
             }
 
             // Skip any classes we already know about
-            if (in_array($ct, $this->classes)) {
+            if (in_array($class, $this->classes)) {
                 continue;
             }
-            $this->classes[] = $ct;
+            $this->classes[] = $class;
 
-            $ct = new ClassReflection($ct);
+            $class = new ClassReflection($class);
 
             // Skip ZF2-based autoloaders
-            if (in_array('Zend\Loader\SplAutoloader', $ct->getInterfaceNames())) {
+            if (in_array('Zend\Loader\SplAutoloader', $class->getInterfaceNames())) {
                 continue;
             }
 
             // Skip internal classes or classes from extensions
             // (this shouldn't happen, as we're only caching Zend classes)
-            if ($ct->isInternal()
-                || $ct->getExtensionName()
+            if ($class->isInternal()
+                || $class->getExtensionName()
             ) {
                 continue;
             }
 
-            $code .= static::getCacheCode($ct);
+            $code .= static::getCacheCode($class);
         }
 
         return $code;
