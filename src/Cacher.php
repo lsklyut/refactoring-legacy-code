@@ -78,10 +78,6 @@ class Cacher
             $declaration .= 'abstract ';
         }
 
-//        if (!$r->isAbstract() && $r->isInterface()) {
-//            $declaration .= 'interface ';
-//        }
-
         if ($r->isFinal()) {
             $declaration .= 'final ';
         }
