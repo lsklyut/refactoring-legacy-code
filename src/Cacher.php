@@ -146,7 +146,7 @@ class Cacher
     {
         $parentClassName = false;
 
-        if ($parent && $classReflection->getNamespaceName()) {
+        if ($parent instanceof ClassReflection && $classReflection->getNamespaceName()) {
             $parentClassName = array_key_exists($parent->getName(), $usesNames)
                 ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
                 : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
