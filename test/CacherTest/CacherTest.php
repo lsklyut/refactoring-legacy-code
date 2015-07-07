@@ -34,7 +34,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $actual = $this->sut->cache($classes);
 
-        $expected = $this->getTestFileContents('testMultipleClasses');
+        $expected = $this->getTestFileContents('testMessageArrayObjectAndFilterIteratorClasses');
 
         $this->assertEquals($expected, $actual);
     }
@@ -48,7 +48,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $actual = $this->sut->cache($classes);
 
-        $expected = $this->getTestFileContents('testNoClassesReturnsEmptyFile');
+        $expected = $this->getTestFileContents('testNoClasses');
 
         $this->assertEquals($expected, $actual);
     }
@@ -64,7 +64,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $actual = $this->sut->cache($classes);
 
-        $expected = $this->getTestFileContents('testOneClass');
+        $expected = $this->getTestFileContents('testMessageClass');
 
         $this->assertEquals($expected, $actual);
     }
@@ -75,7 +75,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $actual = $this->sut->cache($classes);
 
-        $expected = $this->getTestFileContents('testNoClassesReturnsEmptyFile');
+        $expected = $this->getTestFileContents('testNoClasses');
 
         $this->assertEquals($expected, $actual);
     }
@@ -86,7 +86,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $actual = $this->sut->cache($classes);
 
-        $expected = $this->getTestFileContents('testOneClass');
+        $expected = $this->getTestFileContents('testMessageClass');
 
         $this->assertEquals($expected, $actual);
     }
