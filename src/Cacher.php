@@ -18,6 +18,11 @@ class Cacher
 
     protected $allowedNamespaces = array('Zend');
 
+    protected $ignoredClasses = array(
+        'Zend\Loader\AutoloaderFactory',
+        'Zend\Loader\SplAutoloader'
+    );
+
     public function __construct(array $allowedNamespaces = null)
     {
         if (null !== $allowedNamespaces) {
@@ -34,19 +39,10 @@ class Cacher
                 continue;
             }
 
-            // Skip the autoloader factory and this class
-            if (in_array($class, array('Zend\Loader\AutoloaderFactory', __CLASS__))) {
+            if ($this->shouldIgnoreClass($class)) {
                 continue;
             }
 
-            if ($class === 'Zend\Loader\SplAutoloader') {
-                continue;
-            }
-
-            // Skip any classes we already know about
-            if (in_array($class, $this->loadedClasses)) {
-                continue;
-            }
             $this->loadedClasses[] = $class;
 
             $class = $this->getClassReflectionFactory()->factory($class);
@@ -123,5 +119,16 @@ class Cacher
         }
 
         return true;
+    }
+
+    /**
+     * @param $class
+     * @return bool
+     */
+    private function shouldIgnoreClass($class)
+    {
+        $ignoredClasses = array_merge($this->loadedClasses, $this->ignoredClasses, [__CLASS__]);
+
+        return in_array($class, $ignoredClasses);
     }
 }
