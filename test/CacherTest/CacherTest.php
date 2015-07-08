@@ -116,9 +116,11 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
         /** @var ObjectProphecy|CacheCodeGenerator $mockCacheCodeGenerator */
         $mockCacheCodeGenerator = $this->prophesize('Cacher\CacheCodeGenerator');
 
-        $cacher = new Cacher($mockClassReflectionFactory->reveal(), $mockCacheCodeGenerator->reveal());
+        $cacher = new Cacher();
+        $cacher->setClassReflectionFactory($mockClassReflectionFactory->reveal());
+        $cacher->setCacheCodeGenerator($mockCacheCodeGenerator->reveal());
 
-        $actual = $cacher->cache([]);
+        $actual = $cacher->cache([$internalClass]);
 
         $this->assertEquals("<?php\n", $actual);
     }

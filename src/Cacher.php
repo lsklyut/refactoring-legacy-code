@@ -16,21 +16,6 @@ class Cacher
      */
     protected $cacheCodeGenerator;
 
-    public function __construct(ClassReflectionFactory $classReflectionFactory = null, CacheCodeGenerator $cacheCodeGenerator = null)
-    {
-        if (null === $classReflectionFactory) {
-            $classReflectionFactory = new ClassReflectionFactory();
-        }
-
-        $this->classReflectionFactory = $classReflectionFactory;
-
-        if (null === $cacheCodeGenerator) {
-            $cacheCodeGenerator = new CacheCodeGenerator();
-        }
-
-        $this->cacheCodeGenerator = $cacheCodeGenerator;
-    }
-
     public function cache($classes)
     {
         $code = "<?php\n";
@@ -56,7 +41,7 @@ class Cacher
             }
             $this->loadedClasses[] = $class;
 
-            $class = $this->classReflectionFactory->factory($class);
+            $class = $this->getClassReflectionFactory()->factory($class);
 
             // Skip ZF2-based autoloaders
             if (in_array('Zend\Loader\SplAutoloader', $class->getInterfaceNames())) {
@@ -71,13 +56,49 @@ class Cacher
                 continue;
             }
 
-            $code .= $this->cacheCodeGenerator->generate($class);
+            $code .= $this->getCacheCodeGenerator()->generate($class);
         }
 
         return $code;
     }
 
+    /**
+     * @return ClassReflectionFactory
+     */
+    public function getClassReflectionFactory()
+    {
+        if (null === $this->classReflectionFactory) {
+            $this->classReflectionFactory = new ClassReflectionFactory();
+        }
 
+        return $this->classReflectionFactory;
+    }
 
+    /**
+     * @param ClassReflectionFactory $classReflectionFactory
+     */
+    public function setClassReflectionFactory($classReflectionFactory)
+    {
+        $this->classReflectionFactory = $classReflectionFactory;
+    }
 
+    /**
+     * @return CacheCodeGenerator
+     */
+    public function getCacheCodeGenerator()
+    {
+        if (null === $this->cacheCodeGenerator) {
+            $this->cacheCodeGenerator = new CacheCodeGenerator();
+        }
+
+        return $this->cacheCodeGenerator;
+    }
+
+    /**
+     * @param CacheCodeGenerator $cacheCodeGenerator
+     */
+    public function setCacheCodeGenerator($cacheCodeGenerator)
+    {
+        $this->cacheCodeGenerator = $cacheCodeGenerator;
+    }
 }
