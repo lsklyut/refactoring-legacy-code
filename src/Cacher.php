@@ -8,6 +8,20 @@ class Cacher
 {
     protected $loadedClasses = array();
 
+    /**
+     * @var ClassReflectionFactory
+     */
+    protected $classReflectionFactory;
+
+    public function __construct(ClassReflectionFactory $classReflectionFactory = null)
+    {
+        if (null === $classReflectionFactory) {
+            $classReflectionFactory = new ClassReflectionFactory();
+        }
+
+        $this->classReflectionFactory = $classReflectionFactory;
+    }
+
     public function cache($classes)
     {
         $code = "<?php\n";
@@ -33,7 +47,7 @@ class Cacher
             }
             $this->loadedClasses[] = $class;
 
-            $class = new ClassReflection($class);
+            $class = $this->classReflectionFactory->factory($class);
 
             // Skip ZF2-based autoloaders
             if (in_array('Zend\Loader\SplAutoloader', $class->getInterfaceNames())) {
