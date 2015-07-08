@@ -2,7 +2,11 @@
 
 namespace CacherTest;
 
+use Cacher\CacheCodeGenerator;
 use Cacher\Cacher;
+use Cacher\ClassReflectionFactory;
+use Prophecy\Prophecy\ObjectProphecy;
+use Zend\Code\Reflection\ClassReflection;
 use Zend\EventManager\Filter\FilterIterator;
 use Zend\Stdlib\ArrayObject;
 use Zend\Stdlib\Hydrator\NamingStrategy\ArrayMapNamingStrategy;
@@ -92,6 +96,31 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
         $expected = $this->getTestFileContents('testMessageClass');
 
         $this->assertEquals($expected, $actual);
+    }
+
+    public function testSkipsInternalClasses()
+    {
+        /** @var ObjectProphecy|ClassReflection $mockClassReflection */
+        $mockClassReflection = $this->prophesize('Zend\Code\Reflection\ClassReflection');
+
+        $mockClassReflection->isInternal()->willReturn(true);
+        $mockClassReflection->getInterfaceNames()->willReturn([]);
+
+        /** @var ObjectProphecy|ClassReflectionFactory $mockClassReflectionFactory */
+        $mockClassReflectionFactory = $this->prophesize('Cacher\ClassReflectionFactory');
+
+        $internalClass = 'Zend\InternalClass';
+
+        $mockClassReflectionFactory->factory($internalClass)->willReturn($mockClassReflection->reveal());
+
+        /** @var ObjectProphecy|CacheCodeGenerator $mockCacheCodeGenerator */
+        $mockCacheCodeGenerator = $this->prophesize('Cacher\CacheCodeGenerator');
+
+        $cacher = new Cacher($mockClassReflectionFactory->reveal(), $mockCacheCodeGenerator->reveal());
+
+        $actual = $cacher->cache([]);
+
+        $this->assertEquals("<?php\n", $actual);
     }
 
     /**
