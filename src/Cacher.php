@@ -23,10 +23,14 @@ class Cacher
         'Zend\Loader\SplAutoloader'
     );
 
-    public function __construct(array $allowedNamespaces = null)
+    public function __construct(array $allowedNamespaces = null, array $ignoredClasses = null)
     {
         if (null !== $allowedNamespaces) {
             $this->allowedNamespaces = $allowedNamespaces;
+        }
+
+        if (null !== $ignoredClasses) {
+            $this->ignoredClasses = $ignoredClasses;
         }
     }
 

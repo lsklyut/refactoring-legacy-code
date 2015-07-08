@@ -153,6 +153,36 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue(false !== strpos($actual, 'CacheCodeGenerator'), 'CacheCodeGenerator was skipped!');
     }
 
+    public function testSkipsCustomIgnoredFilesInAllowedNamespace()
+    {
+        /** @var ObjectProphecy|ClassReflection $mockClassReflection */
+        $mockClassReflection = $this->prophesize('Zend\Code\Reflection\ClassReflection');
+
+        $mockClassReflection->isInternal()->willReturn(false);
+        $mockClassReflection->getInterfaceNames()->willReturn([]);
+        $mockClassReflection->getExtensionName()->willReturn('');
+
+        /** @var ObjectProphecy|ClassReflectionFactory $mockClassReflectionFactory */
+        $mockClassReflectionFactory = $this->prophesize('Cacher\ClassReflectionFactory');
+
+        $cacheCodeGeneratorClass = 'Symfony\Some\Autoloader';
+
+        $mockClassReflectionFactory->factory($cacheCodeGeneratorClass)->willReturn($mockClassReflection->reveal());
+
+        /** @var ObjectProphecy|CacheCodeGenerator $mockCacheCodeGenerator */
+        $mockCacheCodeGenerator = $this->prophesize('Cacher\CacheCodeGenerator');
+
+        $mockCacheCodeGenerator->generate($mockClassReflection)->willReturn('SymfonyAutoloader');
+
+        $cacher = new Cacher(['Symfony'], [$cacheCodeGeneratorClass]);
+        $cacher->setClassReflectionFactory($mockClassReflectionFactory->reveal());
+        $cacher->setCacheCodeGenerator($mockCacheCodeGenerator->reveal());
+
+        $actual = $cacher->cache([$cacheCodeGeneratorClass]);
+
+        $this->assertEquals("<?php\n", $actual);
+    }
+
     /**
      * @return string
      */
