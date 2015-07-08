@@ -123,6 +123,34 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("<?php\n", $actual);
     }
 
+    public function testCanCacheNonZendFiles()
+    {
+        /** @var ObjectProphecy|ClassReflection $mockClassReflection */
+        $mockClassReflection = $this->prophesize('Zend\Code\Reflection\ClassReflection');
+
+        $mockClassReflection->isInternal()->willReturn(false);
+        $mockClassReflection->getInterfaceNames()->willReturn([]);
+        $mockClassReflection->getExtensionName()->willReturn('');
+
+        /** @var ObjectProphecy|ClassReflectionFactory $mockClassReflectionFactory */
+        $mockClassReflectionFactory = $this->prophesize('Cacher\ClassReflectionFactory');
+
+        $cacheCodeGeneratorClass = 'Cacher\CacheCodeGenerator';
+
+        $mockClassReflectionFactory->factory($cacheCodeGeneratorClass)->willReturn($mockClassReflection->reveal());
+
+        /** @var ObjectProphecy|CacheCodeGenerator $mockCacheCodeGenerator */
+        $mockCacheCodeGenerator = $this->prophesize('Cacher\CacheCodeGenerator');
+
+        $mockCacheCodeGenerator->generate($mockClassReflection)->willReturn('CacheCodeGenerator');
+
+        $cacher = new Cacher($mockClassReflectionFactory->reveal(), $mockCacheCodeGenerator->reveal());
+
+        $actual = $cacher->cache([$cacheCodeGeneratorClass]);
+
+        $this->assertTrue(false !== strpos($actual, 'CacheCodeGenerator'), 'CacheCodeGenerator was skipped!');
+    }
+
     /**
      * @return string
      */
