@@ -146,7 +146,7 @@ class CacherIntegrationTest extends \PHPUnit_Framework_TestCase
 
         $mockCacheCodeGenerator->generate($mockClassReflection)->willReturn('CacheCodeGenerator');
 
-        $cacher = new Cacher($mockClassReflectionFactory->reveal(), $mockCacheCodeGenerator->reveal());
+        $cacher = new Cacher(['Cacher']);
 
         $actual = $cacher->cache([$cacheCodeGeneratorClass]);
 

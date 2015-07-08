@@ -16,13 +16,21 @@ class Cacher
      */
     protected $cacheCodeGenerator;
 
+    protected $allowedNamespaces = array('Zend');
+
+    public function __construct(array $allowedNamespaces = null)
+    {
+        if (null !== $allowedNamespaces) {
+            $this->allowedNamespaces = $allowedNamespaces;
+        }
+    }
+
     public function cache($classes)
     {
         $code = "<?php\n";
 
         foreach ($classes as $class) {
-            // Skip non-Zend classes
-            if (0 !== strpos($class, 'Zend')) {
+            if ($this->classNamespaceAllowedToCache($class)) {
                 continue;
             }
 
@@ -100,5 +108,20 @@ class Cacher
     public function setCacheCodeGenerator($cacheCodeGenerator)
     {
         $this->cacheCodeGenerator = $cacheCodeGenerator;
+    }
+
+    /**
+     * @param $class
+     * @return bool
+     */
+    protected function classNamespaceAllowedToCache($class)
+    {
+        foreach ($this->allowedNamespaces as $namespace) {
+            if (0 === strpos($class, $namespace)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
