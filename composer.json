@@ -3,7 +3,8 @@
     "description": "Legacy Code example project for demonstration",
     "type": "library",
     "require": {
-        "zendframework/zend-code": "2.*"
+        "zendframework/zend-code": "2.*",
+        "phpunit/phpunit": "~4.5"
     },
     "autoload": {
         "psr-4": {"Cacher\\": "src/"}
