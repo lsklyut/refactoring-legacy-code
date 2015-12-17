@@ -6,41 +6,48 @@ use Zend\Code\Reflection\ClassReflection;
 
 class CacheCodeGenerator
 {
-    public function getCacheCode(ClassReflection $r)
+    /** @var Factory */
+    protected $factory;
+
+    public function __construct(Factory $factory = null)
     {
-        $useString = $this->buildUseString($r);
-        $usesNames = $this->buildUseNames($r);
-
-        list($useString, $usesNames) = [
-            $this->buildUseString($r),
-            $this->buildUseNames($r)
-        ];
-
-        $declaration = $this->buildDeclareStatement($r, $usesNames);
-
-        $contents = $r->getContents(false);
-        $dir  = dirname($r->getFileName());
-        $contents = trim(str_replace('__DIR__', sprintf("'%s'", $dir), $contents));
-
-        $return = "\nnamespace "
-            . $r->getNamespaceName()
-            . " {\n"
-            . $useString
-            . $declaration . "\n"
-            . $contents
-            . "\n}\n";
-
-        return $return;
+        $this->factory = $factory ?: new Factory();
     }
 
     /**
-     * @param ClassReflection $r
+     * @param ClassReflection $classReflection
+     * @return string
+     */
+    public function getCacheCode(ClassReflection $classReflection)
+    {
+        $useString = $this->buildUseString($classReflection);
+        $usesNames = $this->buildUseNames($classReflection);
+        $declaration = $this->buildDeclareStatement($classReflection, $usesNames);
+        $directory = dirname($classReflection->getFileName());
+        $contents = trim(str_replace(__DIR__, sprintf("'%s'", $directory), $classReflection->getContents(false)));
+
+        return PHP_EOL
+            . 'namespace '
+            . $classReflection->getNamespaceName()
+            . ' {'
+            . PHP_EOL
+            . $useString
+            . $declaration
+            . PHP_EOL
+            . $contents
+            . PHP_EOL
+            . '}'
+            . PHP_EOL;
+    }
+
+    /**
+     * @param ClassReflection $classReflection
      * @return array
      */
-    protected function buildUseNames(ClassReflection $r)
+    protected function buildUseNames(ClassReflection $classReflection)
     {
-        $usesNames = array();
-        if (count($uses = $r->getDeclaringFile()->getUses())) {
+        $usesNames = [];
+        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
             foreach ($uses as $use) {
                 $usesNames[$use['use']] = $use['as'];
             }
@@ -50,19 +57,19 @@ class CacheCodeGenerator
     }
 
     /**
-     * @param ClassReflection $r
+     * @param ClassReflection $classReflection
      * @return array
      */
-    protected function buildUseString(ClassReflection $r)
+    protected function buildUseString(ClassReflection $classReflection)
     {
         $useString = '';
-        if (count($uses = $r->getDeclaringFile()->getUses())) {
+        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
             foreach ($uses as $use) {
                 $useString .= "use {$use['use']}";
                 if ($use['as']) {
                     $useString .= " as {$use['as']}";
                 }
-                $useString .= ";\n";
+                $useString .= ';' . PHP_EOL;
             }
             return $useString;
         }
@@ -70,74 +77,119 @@ class CacheCodeGenerator
     }
 
     /**
-     * @param ClassReflection $r
-     * @param $usesNames
+     * @param ClassReflection $classReflection
+     * @param array $usesNames
      * @return string
      */
-    protected function buildDeclareStatement(ClassReflection $r, $usesNames)
+    protected function buildDeclareStatement(ClassReflection $classReflection, array $usesNames)
     {
-        $declaration = '';
+        /** @var ClassReflection | bool */
+        $parent = $classReflection->getParentClass();
+        /** @var string */
+        $namespace = $classReflection->getNamespaceName();
+        return $this->buildStartStatement($classReflection)
+            . $this->buildExtendsStatement($parent, $namespace)
+            . $this->buildInterfaceStatement($classReflection, $parent, $namespace, $usesNames);
+    }
 
-        if ($r->isAbstract() && !$r->isInterface()) {
-            $declaration .= 'abstract ';
+    /**
+     * Partially build the start statement for the class or interface declaration.
+     *
+     * @param ClassReflection $classReflection
+     * @return string
+     */
+    protected function buildStartStatement(ClassReflection $classReflection)
+    {
+        $isInterface = $classReflection->isInterface();
+        return sprintf(
+            '%s%s%s%s',
+            $classReflection->isAbstract() && !$isInterface ? 'abstract ' : '',
+            $classReflection->isFinal() ? 'final ' : '',
+            $isInterface ? 'interface ' : 'class ',
+            $classReflection->getShortName()
+        );
+    }
+
+    /**
+     * Build the extends statement for the class declaration statement.
+     *
+     * @param ClassReflection | bool $parent
+     * @param string $namespace
+     * @return string
+     */
+    protected function buildExtendsStatement($parent, $namespace)
+    {
+        $extendsStatement = null;
+        $name = $parent ? $parent->getName() : '';
+        if ($parent && $namespace) {
+            $extendsStatement = array_key_exists($name, $usesNames)
+                ? ($usesNames[$name] ?: $parent->getShortName())
+                : ((0 === strpos($name, $namespace))
+                    ? substr($name, strlen($namespace) + 1)
+                    : '\\' . $name);
+        } elseif ($parent && !$namespace) {
+            $extendsStatement = '\\' . $name;
         }
+        return $extendsStatement ? " extends {$extendsStatement}" : '';
+    }
 
-//        if (!$r->isAbstract() && $r->isInterface()) {
-//            $declaration .= 'interface ';
-//        }
-
-        if ($r->isFinal()) {
-            $declaration .= 'final ';
+    /**
+     * Build interface extends or implement statements.
+     *
+     * @param ClassReflection $classReflection
+     * @param ClassReflection | bool $parent
+     * @param string $namespace
+     * @param array $usesNames
+     * @return string
+     */
+    protected function buildInterfaceStatement(ClassReflection $classReflection, $parent, $namespace, array $usesNames)
+    {
+        $interfaces = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : []);
+        if (!count($interfaces)) {
+            return '';
         }
+        $iCollection = $this->extractInterfaces($interfaces);
+        return sprintf('%s%s',
+            $classReflection->isInterface() ? ' extends ' : ' implements ',
+            implode(', ', $this->getInterfaceNames($classReflection, $usesNames, $iCollection, $namespace))
+        );
+    }
 
-        if ($r->isInterface()) {
-            $declaration .= 'interface ';
+    /**
+     * Extract all related interfaces.
+     *
+     * @param array
+     * @return array
+     */
+    protected function extractInterfaces(array $interfaces)
+    {
+        foreach ($interfaces as $interface) {
+            $iReflection = $this->factory->getNewClassReflection($interface);
+            $interfaces = array_diff($interfaces, $iReflection->getInterfaceNames());
         }
+        return $interfaces;
+    }
 
-        if (!$r->isInterface()) {
-            $declaration .= 'class ';
-        }
-
-        $declaration .= $r->getShortName();
-
-        $tmp = false;
-        $parent = $r->getParentClass();
-        if (!$r->getNamespaceName()) {
-            $tmp = '\\' . $parent->getName();
-        }
-
-        $tmp = false;
-        if (($parent = $r->getParentClass()) && $r->getNamespaceName()) {
-            $tmp = array_key_exists($parent->getName(), $usesNames)
-                ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
-                : ((0 === strpos($parent->getName(), $r->getNamespaceName()))
-                    ? substr($parent->getName(), strlen($r->getNamespaceName()) + 1)
-                    : '\\' . $parent->getName());
-        } else if ($parent && !$r->getNamespaceName()) {
-            $tmp = '\\' . $parent->getName();
-        }
-
-        if ($tmp) {
-            $declaration .= " extends {$tmp}";
-        }
-
-        $int = array_diff($r->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
-        if (count($int)) {
-            foreach ($int as $interface) {
-                $iReflection = new ClassReflection($interface);
-                $int = array_diff($int, $iReflection->getInterfaceNames());
-            }
-            $declaration .= $r->isInterface() ? ' extends ' : ' implements ';
-            $declaration .= implode(', ', array_map(function ($interface) use ($usesNames, $r) {
-                $iReflection = new ClassReflection($interface);
-                return (array_key_exists($iReflection->getName(), $usesNames)
-                    ? ($usesNames[$iReflection->getName()] ?: $iReflection->getShortName())
-                    : ((0 === strpos($iReflection->getName(), $r->getNamespaceName()))
-                        ? substr($iReflection->getName(), strlen($r->getNamespaceName()) + 1)
-                        : '\\' . $iReflection->getName()));
-            }, $int));
-            return $declaration;
-        }
-        return $declaration;
+    /**
+     * Get an array of all interfaces names.
+     *
+     * @param ClassReflection $classReflection
+     * @param array $usesNames
+     * @param array $iCollection
+     * @param string $namespace
+     * @return array
+     */
+    protected function getInterfaceNames(ClassReflection $classReflection, array $usesNames, array $iCollection, $namespace)
+    {
+        $factory = $this->factory;
+        return array_map(function ($interface) use ($usesNames, $classReflection, $namespace, $factory) {
+            $iReflection = $factory->getNewClassReflection($interface);
+            $name = $iReflection->getName();
+            return (array_key_exists($name, $usesNames)
+                ? ($usesNames[$name] ?: $iReflection->getShortName())
+                : ((0 === strpos($name, $namespace))
+                    ? substr($name, strlen($namespace) + 1)
+                    : '\\' . $name));
+        }, $iCollection);
     }
 }

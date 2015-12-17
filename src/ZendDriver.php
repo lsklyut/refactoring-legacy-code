@@ -6,6 +6,10 @@ use Zend\Code\Reflection\ClassReflection;
 
 class ZendDriver implements IDriver
 {
+    const PREFIX = 'Zend';
+    const AUTOLOADER_FACTORY = 'Zend\Loader\AutoloaderFactory';
+    const SPL_AUTOLOADER = 'Zend\Loader\SplAutoloader';
+
     /**
      * @param ClassReflection $classReflection
      * @return bool
@@ -13,27 +17,13 @@ class ZendDriver implements IDriver
     public function shouldCacheClass(ClassReflection $classReflection)
     {
         $class = $classReflection->getName();
-        $shouldCacheClass = true;
-
-        // Skip non-Zend classes
-        if (0 !== strpos($class, 'Zend')) {
-            $shouldCacheClass = false;
-        }
-
-        // Skip the autoloader factory and this class
-        if (in_array($class, array('Zend\Loader\AutoloaderFactory', __CLASS__))) {
-            $shouldCacheClass = false;
-        }
-
-        if ($class === 'Zend\Loader\SplAutoloader') {
-            $shouldCacheClass = false;
-        }
-
-        // Skip ZF2-based autoloaders
-        if (in_array('Zend\Loader\SplAutoloader', $classReflection->getInterfaceNames())) {
-            $shouldCacheClass = false;
-        }
-
-        return $shouldCacheClass;
+        // Include only Zend classes
+        return strpos($class, static::PREFIX) === 0
+            // Skip the autoloader factory and this class
+            && !in_array($class, [static::AUTOLOADER_FACTORY, __CLASS__])
+            // Skip Zend SPL Autoloader
+            && $class !== static::SPL_AUTOLOADER
+            // Skip ZF2-based autoloaders
+            && !in_array(static::SPL_AUTOLOADER, $classReflection->getInterfaceNames());
     }
 }
