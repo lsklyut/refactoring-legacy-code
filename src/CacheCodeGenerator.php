@@ -6,41 +6,41 @@ use Zend\Code\Reflection\ClassReflection;
 
 class CacheCodeGenerator
 {
-    public function getCacheCode(ClassReflection $r)
+    /**
+     * @param ClassReflection $classReflection
+     * @return string
+     */
+    public function getCacheCode(ClassReflection $classReflection)
     {
-        $useString = $this->buildUseString($r);
-        $usesNames = $this->buildUseNames($r);
+        $useString = $this->buildUseString($classReflection);
+        $usesNames = $this->buildUseNames($classReflection);
+        $declaration = $this->buildDeclareStatement($classReflection, $usesNames);
+        $contents = $classReflection->getContents(false);
+        $directory = dirname($classReflection->getFileName());
+        $contents = trim(str_replace(__DIR__, sprintf("'%s'", $directory), $contents));
 
-        list($useString, $usesNames) = [
-            $this->buildUseString($r),
-            $this->buildUseNames($r)
-        ];
-
-        $declaration = $this->buildDeclareStatement($r, $usesNames);
-
-        $contents = $r->getContents(false);
-        $dir  = dirname($r->getFileName());
-        $contents = trim(str_replace('__DIR__', sprintf("'%s'", $dir), $contents));
-
-        $return = "\nnamespace "
-            . $r->getNamespaceName()
-            . " {\n"
+        return PHP_EOL
+            . 'namespace '
+            . $classReflection->getNamespaceName()
+            . ' {'
+            . PHP_EOL
             . $useString
-            . $declaration . "\n"
+            . $declaration
+            . PHP_EOL
             . $contents
-            . "\n}\n";
-
-        return $return;
+            . PHP_EOL
+            . '}'
+            . PHP_EOL;
     }
 
     /**
-     * @param ClassReflection $r
+     * @param ClassReflection $classReflection
      * @return array
      */
-    protected function buildUseNames(ClassReflection $r)
+    protected function buildUseNames(ClassReflection $classReflection)
     {
-        $usesNames = array();
-        if (count($uses = $r->getDeclaringFile()->getUses())) {
+        $usesNames = [];
+        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
             foreach ($uses as $use) {
                 $usesNames[$use['use']] = $use['as'];
             }
@@ -50,19 +50,19 @@ class CacheCodeGenerator
     }
 
     /**
-     * @param ClassReflection $r
+     * @param ClassReflection $classReflection
      * @return array
      */
-    protected function buildUseString(ClassReflection $r)
+    protected function buildUseString(ClassReflection $classReflection)
     {
         $useString = '';
-        if (count($uses = $r->getDeclaringFile()->getUses())) {
+        if (count($uses = $classReflection->getDeclaringFile()->getUses())) {
             foreach ($uses as $use) {
                 $useString .= "use {$use['use']}";
                 if ($use['as']) {
                     $useString .= " as {$use['as']}";
                 }
-                $useString .= ";\n";
+                $useString .= ';' . PHP_EOL;
             }
             return $useString;
         }
@@ -70,50 +70,21 @@ class CacheCodeGenerator
     }
 
     /**
-     * @param ClassReflection $r
-     * @param $usesNames
+     * @param ClassReflection $classReflection
+     * @param array $usesNames
      * @return string
      */
-    protected function buildDeclareStatement(ClassReflection $r, $usesNames)
+    protected function buildDeclareStatement(ClassReflection $classReflection, array $usesNames)
     {
-        $declaration = '';
-
-        if ($r->isAbstract() && !$r->isInterface()) {
-            $declaration .= 'abstract ';
-        }
-
-//        if (!$r->isAbstract() && $r->isInterface()) {
-//            $declaration .= 'interface ';
-//        }
-
-        if ($r->isFinal()) {
-            $declaration .= 'final ';
-        }
-
-        if ($r->isInterface()) {
-            $declaration .= 'interface ';
-        }
-
-        if (!$r->isInterface()) {
-            $declaration .= 'class ';
-        }
-
-        $declaration .= $r->getShortName();
-
+        $declaration = $this->getStartStatement($classReflection);
         $tmp = false;
-        $parent = $r->getParentClass();
-        if (!$r->getNamespaceName()) {
-            $tmp = '\\' . $parent->getName();
-        }
-
-        $tmp = false;
-        if (($parent = $r->getParentClass()) && $r->getNamespaceName()) {
+        if (($parent = $classReflection->getParentClass()) && $classReflection->getNamespaceName()) {
             $tmp = array_key_exists($parent->getName(), $usesNames)
                 ? ($usesNames[$parent->getName()] ?: $parent->getShortName())
-                : ((0 === strpos($parent->getName(), $r->getNamespaceName()))
-                    ? substr($parent->getName(), strlen($r->getNamespaceName()) + 1)
+                : ((0 === strpos($parent->getName(), $classReflection->getNamespaceName()))
+                    ? substr($parent->getName(), strlen($classReflection->getNamespaceName()) + 1)
                     : '\\' . $parent->getName());
-        } else if ($parent && !$r->getNamespaceName()) {
+        } elseif ($parent && !$classReflection->getNamespaceName()) {
             $tmp = '\\' . $parent->getName();
         }
 
@@ -121,23 +92,39 @@ class CacheCodeGenerator
             $declaration .= " extends {$tmp}";
         }
 
-        $int = array_diff($r->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : array());
+        $int = array_diff($classReflection->getInterfaceNames(), $parent ? $parent->getInterfaceNames() : []);
         if (count($int)) {
             foreach ($int as $interface) {
                 $iReflection = new ClassReflection($interface);
                 $int = array_diff($int, $iReflection->getInterfaceNames());
             }
-            $declaration .= $r->isInterface() ? ' extends ' : ' implements ';
-            $declaration .= implode(', ', array_map(function ($interface) use ($usesNames, $r) {
+            $declaration .= $classReflection->isInterface() ? ' extends ' : ' implements ';
+            $declaration .= implode(', ', array_map(function ($interface) use ($usesNames, $classReflection) {
                 $iReflection = new ClassReflection($interface);
                 return (array_key_exists($iReflection->getName(), $usesNames)
                     ? ($usesNames[$iReflection->getName()] ?: $iReflection->getShortName())
-                    : ((0 === strpos($iReflection->getName(), $r->getNamespaceName()))
-                        ? substr($iReflection->getName(), strlen($r->getNamespaceName()) + 1)
+                    : ((0 === strpos($iReflection->getName(), $classReflection->getNamespaceName()))
+                        ? substr($iReflection->getName(), strlen($classReflection->getNamespaceName()) + 1)
                         : '\\' . $iReflection->getName()));
             }, $int));
             return $declaration;
         }
         return $declaration;
+    }
+
+    /**
+     * @param ClassReflection $classReflection
+     * @return string
+     */
+    protected function getStartStatement(ClassReflection $classReflection)
+    {
+        $isInterface = $classReflection->isInterface();
+        return sprintf(
+            '%s%s%s%s',
+            $classReflection->isAbstract() && !$isInterface ? 'abstract ' : '',
+            $classReflection->isFinal() ? 'final ' : '',
+            $isInterface ? 'interface ' : 'class ',
+            $classReflection->getShortName()
+        );
     }
 }
