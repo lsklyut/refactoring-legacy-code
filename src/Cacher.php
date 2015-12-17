@@ -36,7 +36,12 @@ class Cacher
     {
         $code = static::STANDARD_PHP_OPEN_TAG . PHP_EOL;
         foreach ($classes as $class) {
-            $classReflection = $this->factory->getNewClassReflection($class);
+            try{
+                $classReflection = $this->factory->getNewClassReflection($class);
+            } catch (\ReflectionException $e) {
+                // If class doesn't exist skip.
+                continue;
+            }
             if ($this->isNotAllowCaching($class, $classReflection)) {
                 continue;
             }
